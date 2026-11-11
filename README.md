@@ -12,11 +12,11 @@ Pockit is a modern, intuitive, offline-first Android personal finance applicatio
 - **Recent Transactions**: Real-time listing of recent transactions with category icons, account tags, and timestamps.
 - **Notification Bell & Unread Badge**: Quick access to in-app alerts with a red badge displaying unread notification counts.
 
-### 🔔 2. Notifications Center (`NotificationsFragment`)
-- **In-App & System Status Bar Notifications**: Automatic alerts triggered when users exceed category budget limits, near limits (>80%), complete transfers, or reset app data.
-- **Android System Notification Channel**: Integrates with Android's system `NotificationManager` (`pockit_alerts_channel`) to post native status bar alerts.
+### 🔔 2. Notifications Center & System Heads-Up Popups (`NotificationsFragment`)
+- **System Pop-Up / Heads-Up Alerts**: Configured high-priority `NotificationChannel` (`pockit_popup_alerts_v2` with `IMPORTANCE_HIGH` & vibration pattern) that pops up on top of the phone screen when important events occur (such as exceeding category budget limits or executing transfers).
+- **In-App Notification Center**: Dedicated screen listing all past alerts with read/unread indicators, time tags, message body, and a "Clear All" action button.
+- **Android Runtime Permission**: Handles runtime `POST_NOTIFICATIONS` permission requests on Android 13+ (API 33+).
 - **Unread & Type Badges**: Color-coded badges for **WARNING** (Red triangle for budget overruns), **SUCCESS** (Green checkmark for transfers), and **INFO** (Purple bell for system events).
-- **Clear All & Mark Read**: Automatically marks notifications as read upon viewing and allows clearing all notifications.
 
 ### 💰 3. Wallet & Account Management (`WalletFragment`)
 - **Total Balance Overview**: Displays total aggregated net balance across all accounts.

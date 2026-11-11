@@ -86,4 +86,4 @@ One key challenge was **UI contrast in Spinner dropdown lists** and **BottomNavi
 **Answer:**  
 Pockit features a dual-layer notification architecture:
 1. **In-App Notifications:** Stored in Room database (`AppNotification` entity) and observed via `NotificationDao`. It tracks read/unread states and displays color-coded badges for **WARNING** (budget overruns), **SUCCESS** (transfers), and **INFO** (data resets) in `NotificationsFragment`.
-2. **System Status Bar Alerts:** Uses `NotificationHelper` to configure an Android `NotificationChannel` (`pockit_alerts_channel`) and post native system status bar alerts when important budget limits or transfers occur.
+2. **System Pop-Up / Heads-Up Alerts:** Uses `NotificationHelper` to configure a High-Importance Android `NotificationChannel` (`pockit_popup_alerts_v2` with `IMPORTANCE_HIGH` & vibration pattern) and `NotificationCompat.PRIORITY_HIGH`. When an over-budget alert or transfer occurs, the notification pops up dynamically on top of the phone screen. Handles runtime `POST_NOTIFICATIONS` permission requests on Android 13+.
