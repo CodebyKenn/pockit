@@ -50,6 +50,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MediatorLiveData<DashboardState>()
     val state: LiveData<DashboardState> = _state
 
+    val unreadNotificationsCount: LiveData<Int> = repo.observeUnreadNotificationCount().asLiveData()
+
     private var currentType = "Expense"
     private var currentPeriod = Period.MONTH
 

@@ -48,9 +48,20 @@ erDiagram
         Double limitAmount "Monthly spending limit"
     }
 
+    app_notifications {
+        Long id PK "Auto-generated ID"
+        String userId FK "Belongs to user"
+        String title "Notification Title"
+        String message "Notification body text"
+        String type "WARNING, INFO, or SUCCESS"
+        Long timestamp "Epoch milliseconds date/time"
+        Boolean isRead "Read/Unread status"
+    }
+
     users ||--o{ accounts : "owns"
     users ||--o{ records : "creates"
     users ||--o{ budgets : "sets"
+    users ||--o{ app_notifications : "receives"
     accounts ||--o{ records : "source for"
     accounts ||--o{ records : "destination for"
     categories ||--o{ records : "categorizes"
@@ -69,6 +80,7 @@ graph TD
         A3["SummaryFragment"]
         A4["BudgetFragment"]
         A5["WalletFragment"]
+        A6["NotificationsFragment"]
     end
 
     subgraph ViewModel_Layer["ViewModel Layer"]
@@ -77,17 +89,20 @@ graph TD
         VM3["AnalysisViewModel"]
         VM4["BudgetViewModel"]
         VM5["AccountsViewModel"]
+        VM6["NotificationsViewModel"]
     end
 
     subgraph Data_Layer["Data Layer (Single Source of Truth)"]
         S["Session (Active UserId & DisplayName)"]
         R["PockitRepository"]
+        NH["NotificationHelper (System Status Bar)"]
         
         subgraph DAOs["Room Data Access Objects (DAOs)"]
             D1["AccountDao"]
             D2["CategoryDao"]
             D3["RecordDao"]
             D4["BudgetDao"]
+            D5["NotificationDao"]
         end
 
         DB[("AppDatabase (SQLite / Room)")]
@@ -98,28 +113,33 @@ graph TD
     A3 --> VM3
     A4 --> VM4
     A5 --> VM5
+    A6 --> VM6
 
     VM1 --> R
     VM2 --> R
     VM3 --> R
     VM4 --> R
     VM5 --> R
+    VM6 --> R
 
     R --> S
     R --> D1
     R --> D2
     R --> D3
     R --> D4
+    R --> D5
+    R --> NH
 
     D1 --> DB
     D2 --> DB
     D3 --> DB
     D4 --> DB
+    D5 --> DB
 ```
 
 ---
 
-## 3. Data Flow Diagram (DFD)
+## 3. Data Flow Diagram (DFD) - Notification & Transaction Flow
 
 ```mermaid
 sequenceDiagram
@@ -127,25 +147,25 @@ sequenceDiagram
     actor User
     participant UI as AddExpenseFragment
     participant VM as RecordViewModel / Repo
-    participant DAO as RecordDao / AccountDao
+    participant DAO as RecordDao / NotificationDao
     participant DB as Room Database (pockit.db)
+    participant Helper as NotificationHelper
     participant Dialog as SuccessDialog
 
-    User->>UI: Selects Type (Expense/Income/Transfer), Amount, Account & Category
+    User->>UI: Inputs Expense Transaction (e.g. KSh 1,500 on Food)
     User->>UI: Taps "SAVE TRANSACTION"
     UI->>VM: saveRecord(RecordInput)
-    VM->>VM: Validate RecordInput (Amount > 0, Valid Accounts & Category)
+    VM->>DAO: insert(MoneyRecord)
+    DAO->>DB: SQL INSERT INTO records
     
-    alt Validation Valid
-        VM->>DAO: insert(MoneyRecord)
-        DAO->>DB: SQL INSERT INTO records
-        DB-->>DAO: Insert Success
-        DAO-->>VM: Record Saved
-        VM-->>UI: SaveResult.Success
-        UI->>Dialog: Show SuccessDialog Popup ("Transaction Saved!")
-        Dialog-->>User: Displays Checkmark Dialog with 'X' & Close options
-    else Validation Invalid
-        VM-->>UI: SaveResult.Invalid(RecordError)
-        UI-->>User: Displays Inline Input Error
+    opt Exceeds Category Budget Limit
+        VM->>DAO: insert(AppNotification)
+        DAO->>DB: SQL INSERT INTO app_notifications (WARNING)
+        VM->>Helper: sendSystemNotification("⚠️ Over Budget Warning", message)
+        Helper-->>User: Displays System Status Bar Notification
     end
+
+    VM-->>UI: SaveResult.Success
+    UI->>Dialog: Show SuccessDialog Popup ("Transaction Saved!")
+    Dialog-->>User: Displays Checkmark Dialog with 'X' & Close options
 ```

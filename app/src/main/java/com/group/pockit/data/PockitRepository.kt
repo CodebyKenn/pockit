@@ -1,9 +1,15 @@
 package com.group.pockit.data
 
 import android.content.Context
+import com.group.pockit.data.dao.AccountDao
+import com.group.pockit.data.dao.BudgetDao
+import com.group.pockit.data.dao.CategoryDao
+import com.group.pockit.data.dao.NotificationDao
+import com.group.pockit.data.dao.RecordDao
 import com.group.pockit.data.model.Account
 import com.group.pockit.data.model.AccountBalance
 import com.group.pockit.data.model.AccountFlow
+import com.group.pockit.data.model.AppNotification
 import com.group.pockit.data.model.Budget
 import com.group.pockit.data.model.BudgetOverview
 import com.group.pockit.data.model.Category
@@ -15,7 +21,9 @@ import com.group.pockit.data.model.RecordType
 import com.group.pockit.data.model.SaveResult
 import com.group.pockit.util.DateRange
 import com.group.pockit.util.DateRanges
+import com.group.pockit.util.NotificationHelper
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,20 +31,13 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
 
-/**
- * The only class the ViewModels talk to. It hides the four DAOs, applies the rules
- * (validation, percentages, who the current user is) and returns Flows that keep updating:
- * whenever the data changes, every screen showing it refreshes by itself.
- *
- * Functions starting with "observe" return a Flow (live data). The others are one-off
- * actions and must be called from a coroutine (viewModelScope.launch { ... }).
- */
-class PockitRepository private constructor(db: AppDatabase) {
+class PockitRepository private constructor(db: AppDatabase, private val context: Context) {
 
     private val accountDao = db.accountDao()
     private val categoryDao = db.categoryDao()
     private val recordDao = db.recordDao()
     private val budgetDao = db.budgetDao()
+    private val notificationDao = db.notificationDao()
 
     private val setupLock = Mutex()
 
@@ -115,6 +116,38 @@ class PockitRepository private constructor(db: AppDatabase) {
             timestamp = input.timestamp
         )
         if (input.id == 0L) recordDao.insert(record) else recordDao.update(record)
+
+        if (input.type == RecordType.EXPENSE && input.categoryId != null) {
+            val month = YearMonth.now()
+            val range = DateRanges.monthRange(month)
+            val category = categoryDao.getByType(RecordType.EXPENSE).find { it.id == input.categoryId }
+            if (category != null) {
+                val budget = budgetDao.observeStatus(userId, month.toString(), range.from, range.to).firstOrNull()?.find { it.categoryId == category.id }
+                if (budget != null && budget.limitAmount != null && budget.limitAmount > 0) {
+                    val spent = budget.spent + input.amount
+                    if (spent > budget.limitAmount) {
+                        sendNotification(
+                            title = "⚠️ Over Budget Warning",
+                            message = "Your expense of KSh ${String.format("%,.0f", input.amount)} for ${category.name} exceeded your monthly budget limit of KSh ${String.format("%,.0f", budget.limitAmount)}!",
+                            type = "WARNING"
+                        )
+                    } else if (spent >= budget.limitAmount * 0.8) {
+                        sendNotification(
+                            title = "⚡ Near Budget Limit",
+                            message = "You have used ${((spent / budget.limitAmount) * 100).toInt()}% of your monthly budget limit for ${category.name}.",
+                            type = "WARNING"
+                        )
+                    }
+                }
+            }
+        } else if (input.type == RecordType.TRANSFER) {
+            sendNotification(
+                title = "↔️ Transfer Executed",
+                message = "KSh ${String.format("%,.0f", input.amount)} transferred successfully.",
+                type = "SUCCESS"
+            )
+        }
+
         return SaveResult.Success
     }
 
@@ -185,6 +218,32 @@ class PockitRepository private constructor(db: AppDatabase) {
         return setBudget(YearMonth.now(), catId, limitAmount)
     }
 
+    // -------------------------------------------------------- notifications
+
+    fun observeNotifications(): Flow<List<AppNotification>> = notificationDao.observeAll(userId)
+
+    fun observeUnreadNotificationCount(): Flow<Int> = notificationDao.observeUnreadCount(userId)
+
+    suspend fun markNotificationsAsRead() {
+        notificationDao.markAllAsRead(userId)
+    }
+
+    suspend fun clearNotifications() {
+        notificationDao.clearAll(userId)
+    }
+
+    suspend fun sendNotification(title: String, message: String, type: String = "INFO") {
+        notificationDao.insert(
+            AppNotification(
+                userId = userId,
+                title = title,
+                message = message,
+                type = type
+            )
+        )
+        NotificationHelper.sendSystemNotification(context, title, message)
+    }
+
     // ------------------------------------------------------------ demo data
 
     /** Deletes all records, budgets, and custom accounts for the current user, then recreates default accounts with 0 balance. */
@@ -193,6 +252,7 @@ class PockitRepository private constructor(db: AppDatabase) {
         budgetDao.deleteAll(userId)
         accountDao.deleteAll(userId)
         ensureDefaultAccounts()
+        sendNotification("ℹ️ Data Reset", "All transactions and custom data have been reset.", "INFO")
     }
 
     /** Clears all current data and populates sample transactions and budgets. */
@@ -265,7 +325,10 @@ class PockitRepository private constructor(db: AppDatabase) {
         /** One shared repository for the whole app. */
         fun get(context: Context): PockitRepository =
             instance ?: synchronized(this) {
-                instance ?: PockitRepository(AppDatabase.getInstance(context)).also { instance = it }
+                instance ?: PockitRepository(
+                    AppDatabase.getInstance(context),
+                    context.applicationContext
+                ).also { instance = it }
             }
     }
 }

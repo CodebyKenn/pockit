@@ -81,3 +81,9 @@ We created a custom `SuccessDialog` object ([SuccessDialog.kt](file:///C:/Users/
 One key challenge was **UI contrast in Spinner dropdown lists** and **BottomNavigationView styling**:
 - Default Android Spinners rendered black text on dark popup backgrounds in certain themes. We resolved this by creating custom Spinner item layouts ([spinner_item.xml](file:///C:/Users/Matt/Documents/KCA UNIVERSITY DOCS/Bsc.IT docs/Year2Trim2/Mobile_Applications_Development/Project/app/src/main/res/layout/spinner_item.xml) and [spinner_dropdown_item.xml](file:///C:/Users/Matt/Documents/KCA UNIVERSITY DOCS/Bsc.IT docs/Year2Trim2/Mobile_Applications_Development/Project/app/src/main/res/layout/spinner_dropdown_item.xml)) with explicit white card backgrounds (`#FFFFFF`) and dark purple text (`#46044B`).
 - Material 3 `BottomNavigationView` rendered overlapping dual active indicators. We solved this by disabling the built-in active indicator (`isItemActiveIndicatorEnabled = false`) and applying a clean custom inset lavender pill background ([bg_nav_item_selected.xml](file:///C:/Users/Matt/Documents/KCA UNIVERSITY DOCS/Bsc.IT docs/Year2Trim2/Mobile_Applications_Development/Project/app/src/main/res/drawable/bg_nav_item_selected.xml)).
+
+### Q13: How does the Notification system work in Pockit?
+**Answer:**  
+Pockit features a dual-layer notification architecture:
+1. **In-App Notifications:** Stored in Room database (`AppNotification` entity) and observed via `NotificationDao`. It tracks read/unread states and displays color-coded badges for **WARNING** (budget overruns), **SUCCESS** (transfers), and **INFO** (data resets) in `NotificationsFragment`.
+2. **System Status Bar Alerts:** Uses `NotificationHelper` to configure an Android `NotificationChannel` (`pockit_alerts_channel`) and post native system status bar alerts when important budget limits or transfers occur.

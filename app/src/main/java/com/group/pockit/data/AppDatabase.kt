@@ -8,8 +8,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.group.pockit.data.dao.AccountDao
 import com.group.pockit.data.dao.BudgetDao
 import com.group.pockit.data.dao.CategoryDao
+import com.group.pockit.data.dao.NotificationDao
 import com.group.pockit.data.dao.RecordDao
 import com.group.pockit.data.model.Account
+import com.group.pockit.data.model.AppNotification
 import com.group.pockit.data.model.Budget
 import com.group.pockit.data.model.Category
 import com.group.pockit.data.model.MoneyRecord
@@ -17,13 +19,10 @@ import com.group.pockit.data.model.MoneyRecord
 /**
  * The SQLite database of the app (Room builds it from the entities listed below).
  * The file lives on the phone, so everything works offline and survives a restart.
- *
- * If you ever change an entity (add or rename a column), raise `version` AND uninstall the
- * app from the emulator/phone once, otherwise it will crash on start with an "identity hash" error.
  */
 @Database(
-    entities = [Account::class, Category::class, MoneyRecord::class, Budget::class],
-    version = 1,
+    entities = [Account::class, Category::class, MoneyRecord::class, Budget::class, AppNotification::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun recordDao(): RecordDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile
@@ -46,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "pockit.db"
                 )
                     .addCallback(SeedCategories)
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { instance = it }
             }

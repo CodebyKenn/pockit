@@ -10,9 +10,15 @@ Pockit is a modern, intuitive, offline-first Android personal finance applicatio
 - **Dynamic Balance Overview**: Displays current monthly budget remaining, spent amount, total limit, and percentage used with an interactive progress indicator.
 - **Time Window Filters**: Switch between Day, Week, and Month filters.
 - **Recent Transactions**: Real-time listing of recent transactions with category icons, account tags, and timestamps.
-- **Quick Action**: Direct button to record new transactions or log out.
+- **Notification Bell & Unread Badge**: Quick access to in-app alerts with a red badge displaying unread notification counts.
 
-### 💰 2. Wallet & Account Management (`WalletFragment`)
+### 🔔 2. Notifications Center (`NotificationsFragment`)
+- **In-App & System Status Bar Notifications**: Automatic alerts triggered when users exceed category budget limits, near limits (>80%), complete transfers, or reset app data.
+- **Android System Notification Channel**: Integrates with Android's system `NotificationManager` (`pockit_alerts_channel`) to post native status bar alerts.
+- **Unread & Type Badges**: Color-coded badges for **WARNING** (Red triangle for budget overruns), **SUCCESS** (Green checkmark for transfers), and **INFO** (Purple bell for system events).
+- **Clear All & Mark Read**: Automatically marks notifications as read upon viewing and allows clearing all notifications.
+
+### 💰 3. Wallet & Account Management (`WalletFragment`)
 - **Total Balance Overview**: Displays total aggregated net balance across all accounts.
 - **Multi-Account Support**: Manage accounts such as M-Pesa, Cash, Bank, PayPal, or custom user accounts.
 - **Account Operations**:
@@ -23,7 +29,7 @@ Pockit is a modern, intuitive, offline-first Android personal finance applicatio
   - **LOAD DUMMY DATA**: Instantly seeds sample transactions, accounts, and budgets for demo testing.
   - **RESET / CLEAR DATA**: Clears user data and restores default empty accounts with KSh 0 balance.
 
-### ➕ 3. Transaction Entry (`AddExpenseFragment`)
+### ➕ 4. Transaction Entry (`AddExpenseFragment`)
 - **Multi-Type Support**: Seamlessly log **Expense**, **Income**, or **Transfer** transactions.
 - **Interactive Numeric Keypad**: Custom soft keypad with backspace, decimal point, and amount formatting.
 - **Dynamic Dropdowns**:
@@ -32,19 +38,19 @@ Pockit is a modern, intuitive, offline-first Android personal finance applicatio
 - **Date & Time Selectors**: Date picker dialog and real-time clock time tag.
 - **Custom Success Dialog (`SuccessDialog`)**: Replaces standard Toast messages with a dismissible popup dialog featuring a header 'X' close button, checkmark icon, and tap-outside-to-dismiss behavior.
 
-### 📈 4. Financial Analysis & Summary (`SummaryFragment`)
+### 📈 5. Financial Analysis & Summary (`SummaryFragment`)
 - **Interactive Donut Chart (`DonutChartView`)**: Custom-rendered pie chart showing percentage share per category/account.
 - **Multi-Category Analysis**: Toggle between **Expense**, **Income**, and **Transfer** analyses.
 - **Period Navigation**: Filter analyses by Day, Week, or Month with date range navigation (`< Range >`).
 - **Interactive Legend & Breakdown List**: Color-coded breakdown with exact percentage shares and amounts.
 
-### 🎯 5. Category Budget Management (`BudgetFragment`)
+### 🎯 6. Category Budget Management (`BudgetFragment`)
 - **Category Spending Progress**: Displays spent vs limit progress bars for each expense category.
 - **Set & Edit Limits**: Quick limit setup per category for the current month.
 - **Create Custom Budget Categories**: Button to create new custom expense categories (e.g. *Subscriptions*) with initial monthly limits.
 - **Status Tags**: Clear indicators for "Left to spend", "Near limit", or "Over budget".
 
-### 🔐 6. User Isolation & Authentication
+### 🔐 7. User Isolation & Authentication
 - **Multi-User Data Isolation**: `Session.userId` isolates DB records per user email address, ensuring each user maintains their own private dataset.
 - **Authentication**: Email/Password login and registration workflows.
 
@@ -58,6 +64,7 @@ Pockit is a modern, intuitive, offline-first Android personal finance applicatio
 | **Architecture** | MVVM (Model-View-ViewModel) + Repository Pattern |
 | **UI Framework** | Android XML Layouts, ViewBinding, Material Components 3 |
 | **Navigation** | Jetpack Navigation Component (`NavHostFragment`) |
+| **System Notifications** | Android `NotificationManager`, `NotificationChannel`, `NotificationCompat` |
 | **Database** | Room Database (SQLite ORM) with KSP compiler |
 | **Asynchrony** | Kotlin Coroutines (`viewModelScope`, `lifecycleScope`) & Kotlin `Flow` |
 | **State Management** | `LiveData`, `MediatorLiveData`, `StateFlow` |
@@ -78,12 +85,12 @@ Pockit follows Google's recommended Android app architecture guidelines:
        ▼ (Coroutines / Async)
 [ PockitRepository (Single Source of Truth) ]
        │
-       ├───────────────────────┐
-       ▼                       ▼
-[ Room DAOs ]            [ Session ]
-       │
-       ▼
-[ AppDatabase (pockit.db) ]
+       ├───────────────────────┬──────────────────────┐
+       ▼                       ▼                      ▼
+[ Room DAOs ]            [ Session ]        [ NotificationHelper ]
+       │                                              │
+       ▼                                              ▼
+[ AppDatabase (pockit.db) ]                [ System Notification Bar ]
 ```
 
 Detailed ERD and System Diagrams are documented in [`docs/SYSTEM_DIAGRAMS.md`](docs/SYSTEM_DIAGRAMS.md).
@@ -103,8 +110,9 @@ app/src/main/java/com/group/pockit/
 │   │   ├── AccountDao.kt         # Account CRUD & balance calculations
 │   │   ├── BudgetDao.kt          # Category budget limits & status queries
 │   │   ├── CategoryDao.kt        # Category queries & inserts
+│   │   ├── NotificationDao.kt    # In-app notifications queries & CRUD
 │   │   └── RecordDao.kt          # MoneyRecord CRUD, totals & breakdown queries
-│   └── model/                    # Data models & entity definitions (Account, Budget, Category, MoneyRecord)
+│   └── model/                    # Data models (Account, Budget, Category, MoneyRecord, AppNotification)
 ├── ui/
 │   ├── accounts/                 # AccountsViewModel
 │   ├── analysis/                 # AnalysisViewModel
@@ -112,11 +120,13 @@ app/src/main/java/com/group/pockit/
 │   ├── budget/                   # BudgetFragment, BudgetViewModel
 │   ├── dashboard/                # DashboardFragment, SummaryFragment, DonutChartView, TransactionAdapter
 │   ├── expenses/                 # AddExpenseFragment
+│   ├── notifications/            # NotificationsFragment, NotificationsViewModel, NotificationAdapter
 │   ├── record/                   # RecordViewModel
 │   └── wallet/                   # WalletFragment
 └── util/
     ├── DateRanges.kt             # Date range utilities & period calculations
     ├── Money.kt                  # Currency formatting helpers
+    ├── NotificationHelper.kt     # System status bar notification manager
     └── SuccessDialog.kt          # Custom dismissible popup success dialog
 ```
 
@@ -149,3 +159,6 @@ To execute local unit tests:
 
 ## 📄 Documentation Links
 - 📐 [System & Architecture Diagrams (ERD, DFD)](docs/SYSTEM_DIAGRAMS.md)
+- 🎓 [Presentation Defense Questions & Answers Guide](docs/PRESENTATION_QA.md)
+- 🌐 [Codebase Walkthrough for Web Developers](docs/ANDROID_FOR_WEB_DEVS.md)
+- 👥 [Team Roles & Code Assignment Guide](docs/TEAM_ROLES_TALKING_POINTS.md)

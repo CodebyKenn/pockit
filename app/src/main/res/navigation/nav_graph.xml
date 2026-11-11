@@ -68,6 +68,9 @@
         <action
             android:id="@+id/action_dashboardFragment_to_addExpenseFragment"
             app:destination="@id/addExpenseFragment" />
+        <action
+            android:id="@+id/action_dashboardFragment_to_notificationsFragment"
+            app:destination="@id/notificationsFragment" />
     </fragment>
 
 
@@ -97,5 +100,10 @@
         android:id="@+id/walletFragment"
         android:name="com.group.pockit.ui.wallet.WalletFragment"
         android:label="Wallet" />
+
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.group.pockit.ui.notifications.NotificationsFragment"
+        android:label="Notifications" />
 
 </navigation>

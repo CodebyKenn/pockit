@@ -51,9 +51,23 @@ class DashboardFragment : Fragment() {
             NavHostFragment.findNavController(this)
                 .navigate(R.id.action_dashboardFragment_to_addExpenseFragment)
         }
+        b.btnNotificationBell.setOnClickListener {
+            NavHostFragment.findNavController(this)
+                .navigate(R.id.action_dashboardFragment_to_notificationsFragment)
+        }
         b.btnLogout.setOnClickListener {
             NavHostFragment.findNavController(this)
                 .navigate(R.id.action_global_logout)
+        }
+
+        vm.unreadNotificationsCount.observe(viewLifecycleOwner) { count ->
+            val safeCount = count ?: 0
+            if (safeCount > 0) {
+                b.tvNotificationBadge.visibility = View.VISIBLE
+                b.tvNotificationBadge.text = if (safeCount > 9) "9+" else safeCount.toString()
+            } else {
+                b.tvNotificationBadge.visibility = View.GONE
+            }
         }
 
         b.tabDay.setOnClickListener { setTimeTab(b.tabDay) }

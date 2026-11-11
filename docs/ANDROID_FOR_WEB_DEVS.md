@@ -17,6 +17,7 @@ Welcome! If you come from a web background (React, HTML/CSS, Node.js, Express, S
 | **SQL Database / Prisma ORM** | Room SQLite Database & DAOs | `data/AppDatabase.kt`, `data/dao/*.kt` |
 | **Async / Promises / `async-await`** | Kotlin Coroutines & `suspend` functions | `viewModelScope.launch { ... }` |
 | **Global State (Redux / Context)** | `Session.kt` (User ID state) & `Repository` | `data/Session.kt` |
+| **Web Notifications / Webhooks** | System Bar `NotificationManager` + Room DB | `util/NotificationHelper.kt` |
 
 ---
 
@@ -42,6 +43,7 @@ Pockit uses **MVVM (Model-View-ViewModel)** architecture. Think of it like a ful
   - `SummaryFragment.kt`: Financial analytics screen with Donut Chart and category breakdown.
   - `BudgetFragment.kt`: Category budget setup and progress bars.
   - `WalletFragment.kt`: Account balance management, reset data, and demo data loader.
+  - `NotificationsFragment.kt`: In-app notification center listing budget warnings, transfer success, and system alerts.
 
 ### 2. ViewModel Layer (State & Event Handlers)
 In web development, when a user types into an input or clicks a button, you update state (`useState`). In Android:
