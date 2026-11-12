@@ -96,6 +96,13 @@ class PockitRepository private constructor(db: AppDatabase, private val context:
     /** For the category picker. type = INCOME or EXPENSE. */
     fun observeCategories(type: RecordType): Flow<List<Category>> = categoryDao.observeByType(type)
 
+    suspend fun getOrCreateCategory(name: String, type: RecordType): Long {
+        val clean = name.trim()
+        val existing = categoryDao.getByType(type).find { it.name.equals(clean, ignoreCase = true) }
+        if (existing != null) return existing.id
+        return categoryDao.insert(Category(name = clean, type = type, iconKey = "other"))
+    }
+
     // -------------------------------------------------------------- records
 
     /** Validates, then inserts (id = 0) or updates (id > 0). The screen shows result.error if invalid. */

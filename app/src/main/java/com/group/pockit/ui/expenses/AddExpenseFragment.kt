@@ -256,7 +256,7 @@ class AddExpenseFragment : Fragment(R.layout.fragment_add_expense) {
                     return@launch
                 }
 
-                val categoryId = currentCategories.find { it.name.equals(categoryName, ignoreCase = true) }?.id
+                val categoryId = repo.getOrCreateCategory(categoryName, recType)
 
                 val input = RecordInput(
                     type = recType,
@@ -359,13 +359,15 @@ class AddExpenseFragment : Fragment(R.layout.fragment_add_expense) {
             val recType = if (type == "Income") RecordType.INCOME else RecordType.EXPENSE
             lifecycleScope.launch {
                 val dbCategories = repo.observeCategories(recType).firstOrNull() ?: emptyList()
-                currentCategories = dbCategories
                 val catNames = if (dbCategories.isNotEmpty()) {
                     dbCategories.map { it.name }
                 } else {
                     val resArray = if (type == "Income") R.array.income_categories else R.array.expense_categories
-                    resources.getStringArray(resArray).toList()
+                    val defaults = resources.getStringArray(resArray).toList()
+                    defaults.forEach { repo.getOrCreateCategory(it, recType) }
+                    defaults
                 }
+                currentCategories = repo.observeCategories(recType).firstOrNull() ?: emptyList()
 
                 val catAdapter = ArrayAdapter(
                     requireContext(),
