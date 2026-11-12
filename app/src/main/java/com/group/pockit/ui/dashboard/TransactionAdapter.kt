@@ -7,7 +7,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.group.pockit.R
 
-class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.ViewHolder>() {
+class TransactionAdapter(
+    private val onItemClick: ((Transaction) -> Unit)? = null
+) : RecyclerView.Adapter<TransactionAdapter.ViewHolder>() {
 
     private var list = listOf<Transaction>()
 
@@ -34,6 +36,10 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.ViewHolder>()
         } else {
             holder.tvAmount.text = "- Ksh ${String.format("%,.0f", item.amount)}"
             holder.tvAmount.setTextColor(holder.itemView.context.getColor(R.color.p2_red))
+        }
+
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(item)
         }
     }
 

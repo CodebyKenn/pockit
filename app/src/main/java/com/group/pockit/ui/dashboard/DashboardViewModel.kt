@@ -80,6 +80,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun deleteTransaction(id: Long, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repo.deleteRecordById(id)
+            onComplete()
+        }
+    }
+
     private fun setupLiveDataSources() {
         val range = DateRanges.of(currentPeriod, LocalDate.now())
         val incomeLive = repo.observeTotal(RecordType.INCOME, range).asLiveData()

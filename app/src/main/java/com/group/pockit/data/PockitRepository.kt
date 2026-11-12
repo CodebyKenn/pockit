@@ -162,6 +162,13 @@ class PockitRepository private constructor(db: AppDatabase, private val context:
 
     suspend fun deleteRecord(record: MoneyRecord) = recordDao.delete(record)
 
+    suspend fun deleteRecordById(id: Long) {
+        val record = recordDao.getById(id, userId)
+        if (record != null) {
+            recordDao.delete(record)
+        }
+    }
+
     fun observeRecent(limit: Int = 10): Flow<List<RecordItem>> = recordDao.observeRecent(userId, limit)
 
     fun observeRecords(range: DateRange): Flow<List<RecordItem>> =

@@ -1,19 +1,21 @@
 package com.group.pockit.ui.dashboard
 
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.group.pockit.R
-import com.group.pockit.databinding.FragmentDashboardBinding
-import java.time.LocalTime
-import android.content.res.ColorStateList
 import com.group.pockit.data.Session
+import com.group.pockit.databinding.FragmentDashboardBinding
+import com.group.pockit.util.SuccessDialog
+import java.time.LocalTime
 
 class DashboardFragment : Fragment() {
 
@@ -34,7 +36,9 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = TransactionAdapter()
+        adapter = TransactionAdapter(
+            onItemClick = { transaction -> showDeleteTransactionDialog(transaction) }
+        )
         b.rvRecent.layoutManager = LinearLayoutManager(context)
         b.rvRecent.adapter = adapter
 
@@ -100,6 +104,26 @@ class DashboardFragment : Fragment() {
             adapter.submitList(st.recent)
             b.tvEmpty.visibility = if (st.recent.isEmpty()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun showDeleteTransactionDialog(transaction: Transaction) {
+        val recordId = transaction.id.toLongOrNull() ?: return
+        val formattedAmount = String.format("%,.0f", transaction.amount)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete Transaction")
+            .setMessage("Are you sure you want to delete this ${transaction.category} transaction of KSh $formattedAmount?")
+            .setPositiveButton("Delete") { _, _ ->
+                vm.deleteTransaction(recordId) {
+                    SuccessDialog.show(
+                        requireContext(),
+                        title = "Transaction Deleted",
+                        message = "Transaction of KSh $formattedAmount (${transaction.category}) has been deleted."
+                    )
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun setTimeTab(selectedTab: TextView) {
