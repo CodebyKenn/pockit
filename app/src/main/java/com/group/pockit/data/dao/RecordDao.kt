@@ -106,11 +106,11 @@ interface RecordDao {
     /** Donut chart + rows: one line per category, biggest first. */
     @Query(
         """
-        SELECT c.id AS categoryId, c.name AS name, c.iconKey AS iconKey, SUM(r.amount) AS total
+        SELECT COALESCE(c.id, 0) AS categoryId, COALESCE(c.name, r.note, 'General') AS name, COALESCE(c.iconKey, 'other') AS iconKey, SUM(r.amount) AS total
         FROM records r
-        JOIN categories c ON c.id = r.categoryId
+        LEFT JOIN categories c ON c.id = r.categoryId
         WHERE r.userId = :userId AND r.type = :type AND r.timestamp >= :fromTime AND r.timestamp < :toTime
-        GROUP BY c.id
+        GROUP BY COALESCE(c.id, r.note, 'General')
         ORDER BY total DESC
         """
     )
